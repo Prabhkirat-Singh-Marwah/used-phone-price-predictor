@@ -4,7 +4,7 @@ app.py
 Streamlit web app for the Used Phone Price Predictor.
 
 Layout: wide mode, two-column form + result card, performance tabs below.
-Design principles: calm editorial style, teal accent, no gimmicks.
+Design: strict black / white / gray palette. No color accents.
 """
 
 import json
@@ -37,120 +37,193 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# -- CSS injection (minimal, organised) ------------------------------------
+# -- CSS injection ----------------------------------------------------------
+# Palette (black / white / grays only):
+#   #000000  header bg, price, thick borders
+#   #111111  primary text
+#   #333333  body text, labels, section headings
+#   #555555  secondary / caption text
+#   #888888  muted (used sparingly)
+#   #cccccc  light dividers
+#   #f0f0f0  row hover, subtle fills
+#   #ffffff  card bg, app bg
 st.markdown("""
 <style>
-/* -- Google Font -- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
-/* -- Base -- */
+/* ---- Reset / base ---- */
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
-    color: #1a1a1a;
+    color: #111111;
 }
-.stApp {
-    background-color: #f5f4f1;
-}
+.stApp { background-color: #ffffff; }
 
-/* -- Header strip -- */
+/* ---- Header bar ---- */
 .header-bar {
-    background: #1a1a1a;
-    color: #f5f4f1;
-    padding: 14px 24px;
-    margin: -1rem -1rem 1.5rem -1rem;
-    font-size: 1.15rem;
+    background: #000000;
+    color: #ffffff;
+    padding: 16px 28px 14px 28px;
+    margin: -1rem -1rem 2rem -1rem;
+    font-size: 1.05rem;
     font-weight: 600;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
 }
 .header-sub {
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     font-weight: 400;
-    opacity: 0.65;
-    margin-top: 2px;
+    color: #999999;
+    margin-top: 4px;
 }
 
-/* -- Section labels -- */
+/* ---- Section labels ---- */
 .section-label {
-    font-size: 0.7rem;
+    font-size: 0.67rem;
     font-weight: 600;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #888;
-    margin-bottom: 6px;
-    margin-top: 20px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 4px;
+    color: #111111;
+    border-bottom: 2px solid #111111;
+    padding-bottom: 5px;
+    margin-top: 24px;
+    margin-bottom: 10px;
 }
 
-/* -- Result card -- */
+/* ---- Result card ---- */
 .result-card {
     background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 24px 28px;
-    margin-top: 8px;
-}
-.price-main {
-    font-size: 2.4rem;
-    font-weight: 600;
-    color: #1a1a1a;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-}
-.price-range {
-    font-size: 0.88rem;
-    color: #666;
-    margin-top: 6px;
-    font-variant-numeric: tabular-nums;
+    border: 1.5px solid #111111;
+    border-radius: 3px;
+    padding: 26px 30px 22px 30px;
+    margin-top: 2px;
 }
 .price-label {
-    font-size: 0.72rem;
-    color: #999;
+    font-size: 0.67rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 6px;
+    color: #555555;
+    margin-bottom: 8px;
+}
+.price-main {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #000000;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+}
+.price-range {
+    font-size: 0.82rem;
+    color: #555555;
+    margin-top: 7px;
+    font-variant-numeric: tabular-nums;
+}
+.divider {
+    border: none;
+    border-top: 1px solid #cccccc;
+    margin: 18px 0 14px 0;
+}
+.factors-label {
+    font-size: 0.67rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #333333;
+    margin-bottom: 8px;
 }
 
-/* -- Factor rows -- */
+/* ---- Factor rows ---- */
 .factor-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 7px 0;
+    align-items: baseline;
+    padding: 8px 0;
     border-bottom: 1px solid #f0f0f0;
-    font-size: 0.84rem;
+    font-size: 0.82rem;
 }
 .factor-row:last-child { border-bottom: none; }
-.factor-key { color: #444; }
-.factor-val { font-weight: 500; font-variant-numeric: tabular-nums; }
-.factor-pos { color: #2d6a6a; }
-.factor-neg { color: #a04040; }
-.factor-neu { color: #666; }
+.factor-key { color: #333333; }
+.factor-val { font-weight: 500; font-variant-numeric: tabular-nums; color: #000000; }
 
-/* -- Metric table -- */
-.metric-tbl { font-size: 0.85rem; }
-.metric-tbl td, .metric-tbl th {
-    padding: 6px 14px;
-    text-align: right;
+/* ---- Spec summary ---- */
+.spec-summary {
+    font-size: 0.74rem;
+    color: #555555;
+    margin-top: 14px;
+    line-height: 1.9;
 }
-.metric-tbl th { font-weight: 600; border-bottom: 2px solid #ddd; }
-.metric-tbl tr:hover td { background: #f9f9f7; }
 
-/* -- Divider -- */
-.divider { border: none; border-top: 1px solid #ddd; margin: 18px 0; }
-
-/* -- Streamlit overrides -- */
+/* ---- Streamlit widget label overrides ---- */
+/* Force all form labels to be dark, readable */
+label, .stRadio label, .stCheckbox label,
 div[data-testid="stSelectbox"] label,
 div[data-testid="stSlider"] label,
 div[data-testid="stRadio"] label,
-div[data-testid="stNumberInput"] label {
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: #333;
+div[data-testid="stNumberInput"] label,
+div[data-testid="stCheckbox"] label,
+div[data-testid="stSelectSlider"] label {
+    font-size: 0.81rem !important;
+    font-weight: 500 !important;
+    color: #111111 !important;
 }
+/* Radio option labels */
+div[data-testid="stRadio"] p {
+    color: #111111 !important;
+    font-size: 0.81rem;
+}
+/* Slider value display */
+div[data-testid="stSlider"] [data-testid="stTickBarMin"],
+div[data-testid="stSlider"] [data-testid="stTickBarMax"] {
+    color: #555555;
+    font-size: 0.75rem;
+}
+/* Selectbox text */
+div[data-testid="stSelectbox"] div[data-baseweb="select"] {
+    border-color: #cccccc;
+}
+
+/* ---- Primary button ---- */
+div[data-testid="stButton"] button[kind="primary"] {
+    background: #000000 !important;
+    color: #ffffff !important;
+    border: none;
+    border-radius: 3px;
+    font-weight: 500;
+    font-size: 0.84rem;
+    letter-spacing: 0.04em;
+}
+div[data-testid="stButton"] button[kind="primary"]:hover {
+    background: #222222 !important;
+}
+
+/* ---- Tabs ---- */
 div[data-testid="stTabs"] button {
-    font-size: 0.82rem;
+    font-size: 0.81rem;
+    color: #333333;
+    font-weight: 500;
+}
+div[data-testid="stTabs"] button[aria-selected="true"] {
+    color: #000000;
+    border-bottom-color: #000000 !important;
+}
+
+/* ---- Dataframe ---- */
+div[data-testid="stDataFrame"] th {
+    background-color: #f0f0f0 !important;
+    color: #111111 !important;
+    font-weight: 600;
+}
+
+/* ---- Separator before tabs ---- */
+.tab-sep {
+    border: none;
+    border-top: 1.5px solid #111111;
+    margin: 32px 0 0 0;
+}
+
+/* ---- Warning / info box text ---- */
+div[data-testid="stAlert"] {
+    color: #111111;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -158,7 +231,7 @@ div[data-testid="stTabs"] button {
 # -- Header -----------------------------------------------------------------
 st.markdown("""
 <div class="header-bar">
-    Used Phone Price Estimator -- India Market
+    Used Phone Price Estimator &mdash; India Market
     <div class="header-sub">Estimates second-hand smartphone resale value in INR</div>
 </div>
 """, unsafe_allow_html=True)
@@ -184,7 +257,7 @@ def model_available() -> bool:
     return MODEL_PATH.exists()
 
 
-# -- Brand / model catalogue helpers ---------------------------------------
+# -- Brand / model catalogue helpers ----------------------------------------
 ALL_BRANDS = sorted(BRAND_CATALOGUE.keys())
 
 def models_for_brand(brand: str) -> list[str]:
@@ -193,14 +266,16 @@ def models_for_brand(brand: str) -> list[str]:
 def spec_for_model(brand: str, model_name: str) -> dict:
     for m in BRAND_CATALOGUE[brand]["models"]:
         if m[0] == model_name:
-            return {"release_year": m[1], "original_price_inr": m[2],
-                    "storages": m[3], "rams": m[4]}
+            return {
+                "release_year": m[1], "original_price_inr": m[2],
+                "storages": m[3], "rams": m[4],
+            }
     return {}
 
 
 # -- Indian number formatter ------------------------------------------------
 def fmt_inr(n: int) -> str:
-    """Format an integer in Indian numbering style, e.g. 1,23,456."""
+    """Format an integer in Indian numbering style, e.g. Rs 1,23,456."""
     s = str(abs(n))
     if len(s) <= 3:
         return f"Rs {s}"
@@ -219,77 +294,67 @@ def fmt_inr(n: int) -> str:
 # -- Factor explanation helper ----------------------------------------------
 def compute_factor_effects(model, base_spec: dict, base_price: int) -> list[dict]:
     """
-    Re-predict with each factor set to its best value; report the delta.
-    Returns list of {"label", "effect_str", "sign"} dicts.
+    Re-predict with each factor nudged to its best value.
+    Reports the actual delta -- no invented text.
     """
     factors = []
 
-    def delta(new_spec: dict) -> int:
-        return predict_price(model, {**base_spec, **new_spec}) - base_price
+    def delta(patch: dict) -> int:
+        return predict_price(model, {**base_spec, **patch}) - base_price
 
-    # Battery health
     batt = base_spec["battery_health_pct"]
     if batt < 90:
         d = delta({"battery_health_pct": 95.0})
         factors.append({
             "label": f"Battery at {batt:.0f}%",
-            "effect_str": f"-{fmt_inr(abs(d))} vs 95% battery",
-            "sign": "neg",
+            "effect": f"-{fmt_inr(abs(d))} vs 95% battery",
         })
 
-    # Screen condition
     sc = base_spec["screen_condition"]
     if sc != "flawless":
         d = delta({"screen_condition": "flawless"})
         factors.append({
             "label": f"Screen: {sc.replace('_', ' ')}",
-            "effect_str": f"-{fmt_inr(abs(d))} vs flawless",
-            "sign": "neg",
+            "effect": f"-{fmt_inr(abs(d))} vs flawless",
         })
 
-    # Body condition
     bc = base_spec["body_condition"]
     if bc != "like_new":
         d = delta({"body_condition": "like_new"})
         factors.append({
             "label": f"Body: {bc.replace('_', ' ')}",
-            "effect_str": f"-{fmt_inr(abs(d))} vs like new",
-            "sign": "neg",
+            "effect": f"-{fmt_inr(abs(d))} vs like new",
         })
 
-    # Box / bill
     if base_spec["has_box_bill"] == 0:
         d = delta({"has_box_bill": 1})
         factors.append({
             "label": "No box / bill",
-            "effect_str": f"-{fmt_inr(abs(d))} vs having box+bill",
-            "sign": "neg",
+            "effect": f"-{fmt_inr(abs(d))} vs with box+bill",
         })
 
-    # Warranty
     if base_spec["warranty_months_left"] < 6:
         d = delta({"warranty_months_left": 12})
         factors.append({
             "label": f"{base_spec['warranty_months_left']} months warranty",
-            "effect_str": f"+{fmt_inr(abs(d))} if 12 months warranty",
-            "sign": "neu",
+            "effect": f"+{fmt_inr(abs(d))} if 12 months left",
         })
 
-    return factors[:4]   # show at most 4
+    return factors[:4]
 
 
 # -- Layout: two columns ----------------------------------------------------
 left_col, right_col = st.columns([4, 5], gap="large")
 
 with left_col:
-    # -- Device section -----------------------------------------------------
-    st.markdown('<div class="section-label">Device</div>', unsafe_allow_html=True)
 
+    # Device ----------------------------------------------------------------
+    st.markdown('<div class="section-label">Device</div>', unsafe_allow_html=True)
     brand = st.selectbox("Brand", ALL_BRANDS, index=ALL_BRANDS.index("Apple"))
     available_models = models_for_brand(brand)
     model_name = st.selectbox("Model", available_models)
 
-    spec_info = spec_for_model(brand, model_name)
+    spec_info       = spec_for_model(brand, model_name)
     release_year    = spec_info.get("release_year", 2021)
     original_price  = spec_info.get("original_price_inr", 50000)
     storage_options = spec_info.get("storages", [128])
@@ -301,9 +366,8 @@ with left_col:
     with c2:
         ram = st.selectbox("RAM (GB)", ram_options)
 
-    # -- Condition section --------------------------------------------------
+    # Condition -------------------------------------------------------------
     st.markdown('<div class="section-label">Condition</div>', unsafe_allow_html=True)
-
     battery = st.slider("Battery health (%)", min_value=55, max_value=100, value=85)
 
     screen_cond = st.radio(
@@ -324,43 +388,37 @@ with left_col:
         has_box = st.checkbox("Has original box + bill", value=True)
     with c4:
         warranty = st.number_input(
-            "Warranty months left", min_value=0, max_value=12,
-            value=0, step=1,
+            "Warranty months left", min_value=0, max_value=12, value=0, step=1,
         )
 
-    # -- Market section -----------------------------------------------------
+    # Market ----------------------------------------------------------------
     st.markdown('<div class="section-label">Market</div>', unsafe_allow_html=True)
-
     demand_label = st.select_slider(
-        "Demand level",
-        options=["Low", "Medium", "High"],
-        value="Medium",
+        "Demand level", options=["Low", "Medium", "High"], value="Medium",
     )
-    demand_map = {"Low": 3.5, "Medium": 5.5, "High": 7.5}
+    demand_map   = {"Low": 3.5, "Medium": 5.5, "High": 7.5}
     demand_index = demand_map[demand_label]
 
-    predict_clicked = st.button("Estimate price", type="primary", use_container_width=True)
+    st.button("Estimate price", type="primary", use_container_width=True)
 
 
-# -- Right column: result card ----------------------------------------------
+# -- Right column: result ---------------------------------------------------
 with right_col:
     if not model_available():
         st.warning(
-            "**Model not found.** Please run `python src/train.py` from the "
-            "project root to train and save the model, then refresh this page.",
+            "**Model not found.** Run `python src/train.py` from the project "
+            "root, then refresh this page.",
             icon=None,
         )
     else:
-        model = get_model()
+        model        = get_model()
         metrics_data = get_metrics()
-        best_mape = 15.0
+        best_mape    = 15.0
         if metrics_data and "test_metrics" in metrics_data:
-            bm = metrics_data.get("best_model", "Random Forest")
+            bm        = metrics_data.get("best_model", "SVR")
             best_mape = metrics_data["test_metrics"].get(bm, {}).get("MAPE", 15.0)
 
         age_years = float(CURRENT_YEAR - release_year)
-
-        # Build spec dict
         spec = {
             "brand":                brand,
             "model":                model_name,
@@ -377,53 +435,46 @@ with right_col:
             "market_demand_index":  demand_index,
         }
 
-        # Always show a prediction (update on any input change or button)
         try:
-            price      = predict_price(model, spec)
-            low, high  = predict_price_range(model, spec, best_mape)
-            factors    = compute_factor_effects(model, spec, price)
+            price     = predict_price(model, spec)
+            low, high = predict_price_range(model, spec, best_mape)
+            factors   = compute_factor_effects(model, spec, price)
 
-            # -- Price card
+            # Price card
             st.markdown(f"""
             <div class="result-card">
               <div class="price-label">Estimated resale price</div>
               <div class="price-main">{fmt_inr(price)}</div>
               <div class="price-range">
-                Likely range &nbsp;{fmt_inr(low)} - {fmt_inr(high)}
-                &nbsp;<span style="color:#bbb">|</span>&nbsp;
-                Based on model MAPE ~ {best_mape:.1f}%
+                Likely range &nbsp; {fmt_inr(low)} &ndash; {fmt_inr(high)}
+                &nbsp; &middot; &nbsp; Model MAPE ~{best_mape:.1f}%
               </div>
-              <hr class="divider">
-              <div style="font-size:0.72rem;color:#999;text-transform:uppercase;
-                          letter-spacing:.06em;margin-bottom:8px;">
-                What moved this price
-              </div>
+              <div class="divider"></div>
+              <div class="factors-label">What moved this price</div>
             """, unsafe_allow_html=True)
 
             if factors:
                 for f in factors:
-                    css_class = {"pos": "factor-pos", "neg": "factor-neg",
-                                 "neu": "factor-neu"}.get(f["sign"], "factor-neu")
                     st.markdown(f"""
                     <div class="factor-row">
                         <span class="factor-key">{f['label']}</span>
-                        <span class="factor-val {css_class}">{f['effect_str']}</span>
+                        <span class="factor-val">{f['effect']}</span>
                     </div>
                     """, unsafe_allow_html=True)
             else:
                 st.markdown(
-                    '<div style="font-size:0.84rem;color:#666;">'
-                    'Phone is in excellent condition -- minimal deductions.</div>',
+                    '<div style="font-size:0.82rem;color:#333333;">'
+                    'Phone is in excellent condition &mdash; minimal deductions.</div>',
                     unsafe_allow_html=True,
                 )
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # -- Quick spec summary
+            # Spec summary line below card
             st.markdown(f"""
-            <div style="font-size:0.78rem;color:#888;margin-top:12px;line-height:1.7;">
-              {brand} {model_name} &middot; {storage}GB / {ram}GB RAM
-              &middot; {age_years:.0f}yr old &middot; Launch Rs{original_price:,}
+            <div class="spec-summary">
+              {brand} {model_name} &middot; {storage} GB / {ram} GB RAM
+              &middot; {age_years:.0f} yr old &middot; Launch {fmt_inr(original_price)}
             </div>
             """, unsafe_allow_html=True)
 
@@ -431,9 +482,8 @@ with right_col:
             st.error(f"Prediction error: {e}")
 
 
-# -- Tabs below -------------------------------------------------------------
-st.markdown("<hr style='border:none;border-top:1px solid #ddd;margin:28px 0 0 0'>",
-            unsafe_allow_html=True)
+# -- Tabs -------------------------------------------------------------------
+st.markdown('<hr class="tab-sep">', unsafe_allow_html=True)
 
 tab_perf, tab_about = st.tabs(["Model performance", "About the data"])
 
@@ -452,16 +502,18 @@ with tab_perf:
             if tm:
                 df_m = pd.DataFrame(tm).T.sort_values("RMSE")
                 df_m.index.name = "Model"
-                df_m = df_m.rename(columns={"MAE": "MAE (Rs)", "RMSE": "RMSE (Rs)",
-                                             "MSE": "MSE", "R2": "R²", "MAPE": "MAPE (%)"})
+                df_m = df_m.rename(columns={
+                    "MAE": "MAE (Rs)", "RMSE": "RMSE (Rs)",
+                    "MSE": "MSE", "R2": "R2", "MAPE": "MAPE (%)",
+                })
                 st.dataframe(
                     df_m.style.format({
                         "MAE (Rs)":  "{:,.0f}",
                         "RMSE (Rs)": "{:,.0f}",
-                        "MSE":      "{:,.0f}",
-                        "R²":       "{:.4f}",
-                        "MAPE (%)": "{:.1f}",
-                    }).highlight_min(subset=["RMSE (Rs)"], color="#d4edea"),
+                        "MSE":       "{:,.0f}",
+                        "R2":        "{:.4f}",
+                        "MAPE (%)":  "{:.1f}",
+                    }).highlight_min(subset=["RMSE (Rs)"], color="#e8e8e8"),
                     use_container_width=True,
                 )
 
@@ -469,15 +521,18 @@ with tab_perf:
             with c_l:
                 avp = FIGURES_DIR / "actual_vs_predicted.png"
                 if avp.exists():
-                    st.image(str(avp), caption="Actual vs Predicted", use_container_width=True)
+                    st.image(str(avp), caption="Actual vs Predicted",
+                             use_container_width=True)
             with c_r:
                 fi = FIGURES_DIR / "feature_importances.png"
                 if fi.exists():
-                    st.image(str(fi), caption="Feature Importances (RF)", use_container_width=True)
+                    st.image(str(fi), caption="Feature Importances (RF)",
+                             use_container_width=True)
 
             mc = FIGURES_DIR / "model_comparison.png"
             if mc.exists():
-                st.image(str(mc), caption="Model RMSE Comparison", use_container_width=True)
+                st.image(str(mc), caption="Model RMSE Comparison",
+                         use_container_width=True)
 
 with tab_about:
     st.markdown("""
@@ -490,13 +545,13 @@ All data used in this project is **fully synthetic** -- generated by
 
 | Assumption | Detail |
 |---|---|
-| Depreciation | Exponential decay; rate is brand-specific (Apple ~82%, Realme ~55% retained per year) |
+| Depreciation | Exponential decay; rate is brand-specific (Apple ~82%, Realme ~55% per year) |
 | Battery penalty | Nonlinear; sharp drop below 80% health |
 | Condition discounts | Screen cracked -> x0.70; body poor -> x0.68 |
 | Box + bill premium | +3% |
 | Warranty | +0.5% per remaining month |
 | Demand index | Derived from brand tier + phone age + Gaussian noise |
-| Price noise | Log-normal (sigma ~ 0.06) -- same phone sells at different prices |
+| Price noise | Log-normal (sigma ~0.06) -- same phone, different sale price |
 | Deliberate mess | 3% missing values, 1.5% duplicates, 1% absurd outliers, inconsistent casing |
 
 **Why synthetic?**
