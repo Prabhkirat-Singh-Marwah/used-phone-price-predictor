@@ -29,7 +29,7 @@ python src/data_generator.py
 # 5. Train models (takes 3–8 min on a laptop)
 python src/train.py
 
-# 6. Launch the web app
+# 6. Launch the web app (supports single device + batch CSV upload)
 streamlit run app.py
 
 # 7. (Optional) Run tests
