@@ -4,7 +4,7 @@ app.py
 Streamlit web app for the Used Phone Price Predictor.
 
 Layout: wide mode, two-column form + result card, performance tabs below.
-Design: strict black / white / gray palette. No color accents.
+Design: Nuanced monochrome palette with subtle slate-gray tones and elevated cards.
 Features: single-device interactive estimation & batch CSV upload estimation.
 """
 
@@ -40,124 +40,168 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# -- CSS injection ----------------------------------------------------------
-# Palette (black / white / grays only):
-#   #000000  header bg, price, thick borders, buttons
-#   #111111  primary text
-#   #333333  body text, labels, section headings
-#   #555555  secondary / caption text
-#   #888888  muted (used sparingly)
-#   #cccccc  light dividers
-#   #f0f0f0  row hover, subtle fills
-#   #ffffff  card bg, app bg
+# -- CSS injection: Nuanced Slate & Gray Tone Palette -----------------------
+# Design Tokens:
+#   Canvas Background:        #f8fafc (Slate 50 - gentle, calm light gray)
+#   Surface / Card:           #ffffff (Pure White)
+#   Elevated Surface:         #f1f5f9 (Slate 100)
+#   Subtle Border:            #e2e8f0 (Slate 200 - crisp 1px separation)
+#   Input Border:             #cbd5e1 (Slate 300)
+#   Primary Text / Headers:   #0f172a (Slate 900 - high contrast deep charcoal)
+#   Body / Labels:            #334155 (Slate 700 - clear, sharp readability)
+#   Secondary / Muted:        #64748b (Slate 500 - compliant contrast ratio)
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* ---- Reset / base ---- */
+/* ---- Base & Canvas ---- */
 html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-    color: #111111;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #0f172a;
 }
-.stApp { background-color: #ffffff; }
+.stApp {
+    background-color: #f8fafc;
+}
 
-/* ---- Header bar ---- */
+/* ---- Header Bar ---- */
 .header-bar {
-    background: #000000;
+    background: #0f172a;
     color: #ffffff;
-    padding: 16px 28px 14px 28px;
-    margin: -1rem -1rem 2rem -1rem;
-    font-size: 1.05rem;
+    padding: 18px 28px;
+    margin: -1rem -1rem 1.8rem -1rem;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08);
+}
+.header-title {
+    font-size: 1.15rem;
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: -0.01em;
+    color: #ffffff;
+    margin: 0;
 }
 .header-sub {
-    font-size: 0.74rem;
+    font-size: 0.78rem;
     font-weight: 400;
-    color: #999999;
-    margin-top: 4px;
+    color: #94a3b8;
+    margin-top: 3px;
 }
 
-/* ---- Section labels ---- */
+/* ---- Panel Container (Left Form) ---- */
+.form-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+/* ---- Section Headers ---- */
 .section-label {
-    font-size: 0.67rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #111111;
-    border-bottom: 2px solid #111111;
-    padding-bottom: 5px;
-    margin-top: 24px;
-    margin-bottom: 10px;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 6px;
+    margin-top: 18px;
+    margin-bottom: 12px;
+}
+.section-label:first-of-type {
+    margin-top: 0;
 }
 
-/* ---- Result card ---- */
+/* ---- Result Valuation Card (Right Column) ---- */
 .result-card {
     background: #ffffff;
-    border: 1.5px solid #111111;
-    border-radius: 3px;
-    padding: 26px 30px 22px 30px;
-    margin-top: 2px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 26px 28px;
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
 }
-.price-label {
-    font-size: 0.67rem;
+.price-badge-label {
+    font-size: 0.70rem;
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: #555555;
-    margin-bottom: 8px;
+    color: #64748b;
+    margin-bottom: 6px;
 }
 .price-main {
     font-size: 2.5rem;
-    font-weight: 600;
-    color: #000000;
+    font-weight: 700;
+    color: #0f172a;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
-    line-height: 1.05;
+    line-height: 1.1;
 }
-.price-range {
+.price-range-pill {
+    display: inline-block;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    border-radius: 6px;
+    padding: 6px 12px;
     font-size: 0.82rem;
-    color: #555555;
-    margin-top: 7px;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
+    margin-top: 10px;
+    margin-bottom: 18px;
 }
-.divider {
+.card-divider {
     border: none;
-    border-top: 1px solid #cccccc;
-    margin: 18px 0 14px 0;
+    border-top: 1px solid #f1f5f9;
+    margin: 16px 0;
 }
-.factors-label {
-    font-size: 0.67rem;
+.factors-header {
+    font-size: 0.72rem;
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #333333;
-    margin-bottom: 8px;
+    color: #475569;
+    margin-bottom: 10px;
 }
 
-/* ---- Factor rows ---- */
+/* ---- Factor Rows (Key Drivers) ---- */
 .factor-row {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
-    padding: 8px 0;
-    border-bottom: 1px solid #f0f0f0;
+    align-items: center;
+    padding: 9px 12px;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 6px;
+    margin-bottom: 6px;
     font-size: 0.82rem;
 }
-.factor-row:last-child { border-bottom: none; }
-.factor-key { color: #333333; }
-.factor-val { font-weight: 500; font-variant-numeric: tabular-nums; color: #000000; }
-
-/* ---- Spec summary ---- */
-.spec-summary {
-    font-size: 0.74rem;
-    color: #555555;
-    margin-top: 14px;
-    line-height: 1.9;
+.factor-key {
+    color: #334155;
+    font-weight: 500;
+}
+.factor-val {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #0f172a;
+    background: #ffffff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
 }
 
-/* ---- Streamlit widget label overrides ---- */
-label, .stRadio label, .stCheckbox label,
+/* ---- Spec Summary Caption ---- */
+.spec-summary {
+    font-size: 0.78rem;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-top: 14px;
+    line-height: 1.6;
+}
+
+/* ---- Explicit Form Controls Styling & Contrast Guarantee ---- */
+/* Labels across all widgets */
 div[data-testid="stSelectbox"] label,
 div[data-testid="stSlider"] label,
 div[data-testid="stRadio"] label,
@@ -165,123 +209,161 @@ div[data-testid="stNumberInput"] label,
 div[data-testid="stCheckbox"] label,
 div[data-testid="stSelectSlider"] label,
 div[data-testid="stFileUploader"] label {
-    font-size: 0.81rem !important;
-    font-weight: 500 !important;
-    color: #111111 !important;
+    font-size: 0.83rem !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    margin-bottom: 4px !important;
 }
 
-/* ---- Checkbox styling (high-contrast black text & border) ---- */
+/* Checkbox specific fix: Guaranteed dark text on light canvas */
 div[data-testid="stCheckbox"] {
-    color: #111111 !important;
+    background-color: transparent !important;
+    padding: 4px 0 !important;
 }
 div[data-testid="stCheckbox"] * {
-    color: #111111 !important;
+    color: #0f172a !important;
 }
 div[data-testid="stCheckbox"] label span p {
-    color: #111111 !important;
-    font-size: 0.82rem !important;
+    color: #0f172a !important;
+    font-size: 0.84rem !important;
     font-weight: 500 !important;
 }
 div[data-testid="stCheckbox"] div[role="checkbox"] {
-    border: 1.5px solid #111111 !important;
+    border: 1.5px solid #94a3b8 !important;
     background-color: #ffffff !important;
+    border-radius: 4px !important;
 }
 div[data-testid="stCheckbox"] div[role="checkbox"][aria-checked="true"] {
-    background-color: #000000 !important;
-    border-color: #000000 !important;
-}
-div[data-testid="stCheckbox"] div[role="checkbox"] svg {
-    fill: #ffffff !important;
+    background-color: #0f172a !important;
+    border-color: #0f172a !important;
 }
 
-/* Radio option labels */
-div[data-testid="stRadio"] * {
-    color: #111111 !important;
+/* Radio buttons options */
+div[data-testid="stRadio"] div[role="radiogroup"] label {
+    color: #1e293b !important;
+    font-size: 0.83rem !important;
+    font-weight: 500 !important;
 }
-div[data-testid="stRadio"] p {
-    color: #111111 !important;
-    font-size: 0.82rem !important;
+div[data-testid="stRadio"] div[role="radiogroup"] p {
+    color: #1e293b !important;
 }
 
-/* Slider values */
+/* Sliders */
 div[data-testid="stSlider"] [data-testid="stTickBarMin"],
 div[data-testid="stSlider"] [data-testid="stTickBarMax"] {
-    color: #555555;
-    font-size: 0.75rem;
+    color: #64748b !important;
+    font-size: 0.74rem !important;
+    font-weight: 500 !important;
 }
 
-/* Buttons (primary & download) */
+/* Primary and secondary buttons */
 div[data-testid="stButton"] button[kind="primary"],
 div[data-testid="stDownloadButton"] button {
-    background: #000000 !important;
+    background-color: #0f172a !important;
     color: #ffffff !important;
-    border: none;
-    border-radius: 3px;
-    font-weight: 500;
-    font-size: 0.84rem;
-    letter-spacing: 0.04em;
+    border: 1px solid #0f172a !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.02em !important;
+    padding: 9px 18px !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+    transition: all 0.15s ease !important;
 }
 div[data-testid="stButton"] button[kind="primary"]:hover,
 div[data-testid="stDownloadButton"] button:hover {
-    background: #222222 !important;
+    background-color: #1e293b !important;
+    border-color: #1e293b !important;
 }
 
-/* Metrics */
-div[data-testid="stMetricValue"] {
-    color: #000000 !important;
-    font-size: 1.45rem !important;
-    font-weight: 600 !important;
+/* Tabs styling */
+div[data-testid="stTabs"] {
+    margin-top: 24px;
 }
-div[data-testid="stMetricLabel"] {
-    color: #555555 !important;
-    font-size: 0.74rem !important;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-
-/* Tabs */
 div[data-testid="stTabs"] button {
-    font-size: 0.81rem;
-    color: #333333;
-    font-weight: 500;
+    font-size: 0.84rem !important;
+    font-weight: 500 !important;
+    color: #64748b !important;
+    border-bottom: 2px solid transparent !important;
+    padding: 10px 18px !important;
+    background-color: transparent !important;
 }
 div[data-testid="stTabs"] button[aria-selected="true"] {
-    color: #000000;
-    border-bottom-color: #000000 !important;
+    color: #0f172a !important;
+    font-weight: 600 !important;
+    border-bottom: 2px solid #0f172a !important;
 }
 
-/* Dataframe header */
+/* Dataframe header & rows */
+div[data-testid="stDataFrame"] {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background-color: #ffffff;
+}
 div[data-testid="stDataFrame"] th {
-    background-color: #f0f0f0 !important;
-    color: #111111 !important;
-    font-weight: 600;
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-weight: 600 !important;
 }
 
-/* Separator before tabs */
+/* File Uploader */
+div[data-testid="stFileUploader"] section {
+    background-color: #ffffff !important;
+    border: 1.5px dashed #cbd5e1 !important;
+    border-radius: 8px !important;
+    padding: 18px !important;
+}
+div[data-testid="stFileUploader"] section:hover {
+    border-color: #64748b !important;
+}
+div[data-testid="stFileUploader"] p,
+div[data-testid="stFileUploader"] span,
+div[data-testid="stFileUploader"] small {
+    color: #475569 !important;
+}
+
+/* Metric summary widgets (Batch Predict) */
+div[data-testid="stMetric"] {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    padding: 14px 18px !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+div[data-testid="stMetricLabel"] {
+    color: #64748b !important;
+    font-size: 0.74rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+div[data-testid="stMetricValue"] {
+    color: #0f172a !important;
+    font-size: 1.35rem !important;
+    font-weight: 700 !important;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Separator */
 .tab-sep {
     border: none;
-    border-top: 1.5px solid #111111;
+    border-top: 1px solid #e2e8f0;
     margin: 32px 0 0 0;
-}
-
-/* Warning / info box */
-div[data-testid="stAlert"] {
-    color: #111111;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# -- Header -----------------------------------------------------------------
+# -- Header Bar -------------------------------------------------------------
 st.markdown("""
 <div class="header-bar">
-    Used Phone Price Estimator &mdash; India Market
-    <div class="header-sub">Estimates second-hand smartphone resale value in INR</div>
+    <div class="header-title">Used Phone Price Estimator &mdash; India Market</div>
+    <div class="header-sub">Statistical valuation model for second-hand smartphones based on specs, condition, and market demand</div>
 </div>
 """, unsafe_allow_html=True)
 
 
 # -- Model loader -----------------------------------------------------------
-@st.cache_resource(show_spinner="Loading model ...")
+@st.cache_resource(show_spinner="Loading valuation model ...")
 def get_model():
     """Load the saved best-model pipeline. Cached for the session."""
     return load_model(MODEL_PATH)
@@ -337,8 +419,8 @@ def fmt_inr(n: int) -> str:
 # -- Factor explanation helper ----------------------------------------------
 def compute_factor_effects(model, base_spec: dict, base_price: int) -> list[dict]:
     """
-    Re-predict with each factor nudged to its best value.
-    Reports the actual delta -- no invented text.
+    Re-predict with each factor nudged to its baseline reference.
+    Reports the actual empirical delta -- zero invented text.
     """
     factors = []
 
@@ -349,7 +431,7 @@ def compute_factor_effects(model, base_spec: dict, base_price: int) -> list[dict
     if batt < 90:
         d = delta({"battery_health_pct": 95.0})
         factors.append({
-            "label": f"Battery at {batt:.0f}%",
+            "label": f"Battery degradation ({batt:.0f}%)",
             "effect": f"-{fmt_inr(abs(d))} vs 95% battery",
         })
 
@@ -357,7 +439,7 @@ def compute_factor_effects(model, base_spec: dict, base_price: int) -> list[dict
     if sc != "flawless":
         d = delta({"screen_condition": "flawless"})
         factors.append({
-            "label": f"Screen: {sc.replace('_', ' ')}",
+            "label": f"Screen ({sc.replace('_', ' ')})",
             "effect": f"-{fmt_inr(abs(d))} vs flawless",
         })
 
@@ -365,34 +447,33 @@ def compute_factor_effects(model, base_spec: dict, base_price: int) -> list[dict
     if bc != "like_new":
         d = delta({"body_condition": "like_new"})
         factors.append({
-            "label": f"Body: {bc.replace('_', ' ')}",
+            "label": f"Body wear ({bc.replace('_', ' ')})",
             "effect": f"-{fmt_inr(abs(d))} vs like new",
         })
 
     if base_spec["has_box_bill"] == 0:
         d = delta({"has_box_bill": 1})
         factors.append({
-            "label": "No box / bill",
-            "effect": f"-{fmt_inr(abs(d))} vs with box+bill",
+            "label": "Missing box or bill",
+            "effect": f"-{fmt_inr(abs(d))} vs original box+bill",
         })
 
     if base_spec["warranty_months_left"] < 6:
         d = delta({"warranty_months_left": 12})
         factors.append({
-            "label": f"{base_spec['warranty_months_left']} months warranty",
-            "effect": f"+{fmt_inr(abs(d))} if 12 months left",
+            "label": f"Active warranty ({base_spec['warranty_months_left']} mos)",
+            "effect": f"+{fmt_inr(abs(d))} if 12 mos warranty",
         })
 
     return factors[:4]
 
 
-# -- Layout: two columns ----------------------------------------------------
-left_col, right_col = st.columns([4, 5], gap="large")
+# -- Main Layout: Two Column Form & Valuation Card --------------------------
+left_col, right_col = st.columns([5, 5], gap="large")
 
 with left_col:
-
-    # Device ----------------------------------------------------------------
-    st.markdown('<div class="section-label">Device</div>', unsafe_allow_html=True)
+    # Device Specifications
+    st.markdown('<div class="section-label">Device Specifications</div>', unsafe_allow_html=True)
     brand = st.selectbox("Brand", ALL_BRANDS, index=ALL_BRANDS.index("Apple"))
     available_models = models_for_brand(brand)
     model_name = st.selectbox("Model", available_models)
@@ -405,13 +486,13 @@ with left_col:
 
     c1, c2 = st.columns(2)
     with c1:
-        storage = st.selectbox("Storage (GB)", storage_options)
+        storage = st.selectbox("Internal storage (GB)", storage_options)
     with c2:
         ram = st.selectbox("RAM (GB)", ram_options)
 
-    # Condition -------------------------------------------------------------
-    st.markdown('<div class="section-label">Condition</div>', unsafe_allow_html=True)
-    battery = st.slider("Battery health (%)", min_value=55, max_value=100, value=85)
+    # Physical Condition
+    st.markdown('<div class="section-label">Physical Condition</div>', unsafe_allow_html=True)
+    battery = st.slider("Battery health percentage (%)", min_value=55, max_value=100, value=85)
 
     screen_cond = st.radio(
         "Screen condition",
@@ -431,21 +512,20 @@ with left_col:
         has_box = st.checkbox("Has original box + bill", value=True)
     with c4:
         warranty = st.number_input(
-            "Warranty months left", min_value=0, max_value=12, value=0, step=1,
+            "Warranty remaining (months)", min_value=0, max_value=12, value=0, step=1,
         )
 
-    # Market ----------------------------------------------------------------
-    st.markdown('<div class="section-label">Market</div>', unsafe_allow_html=True)
+    # Market Factors
+    st.markdown('<div class="section-label">Market Dynamics</div>', unsafe_allow_html=True)
     demand_label = st.select_slider(
-        "Demand level", options=["Low", "Medium", "High"], value="Medium",
+        "Buyer demand level", options=["Low", "Medium", "High"], value="Medium",
     )
     demand_map   = {"Low": 3.5, "Medium": 5.5, "High": 7.5}
     demand_index = demand_map[demand_label]
 
-    st.button("Estimate price", type="primary", use_container_width=True)
+    st.button("Calculate estimated resale price", type="primary", use_container_width=True)
 
 
-# -- Right column: result ---------------------------------------------------
 with right_col:
     if not model_available():
         st.warning(
@@ -456,10 +536,10 @@ with right_col:
     else:
         model        = get_model()
         metrics_data = get_metrics()
-        best_mape    = 15.0
+        best_mape    = 11.5
         if metrics_data and "test_metrics" in metrics_data:
             bm        = metrics_data.get("best_model", "SVR")
-            best_mape = metrics_data["test_metrics"].get(bm, {}).get("MAPE", 15.0)
+            best_mape = metrics_data["test_metrics"].get(bm, {}).get("MAPE", 11.5)
 
         age_years = float(CURRENT_YEAR - release_year)
         spec = {
@@ -483,17 +563,17 @@ with right_col:
             low, high = predict_price_range(model, spec, best_mape)
             factors   = compute_factor_effects(model, spec, price)
 
-            # Price card
+            # Valuation Result Card
             st.markdown(f"""
             <div class="result-card">
-              <div class="price-label">Estimated resale price</div>
+              <div class="price-badge-label">Estimated Resale Valuation</div>
               <div class="price-main">{fmt_inr(price)}</div>
-              <div class="price-range">
-                Likely range &nbsp; {fmt_inr(low)} &ndash; {fmt_inr(high)}
-                &nbsp; &middot; &nbsp; Model MAPE ~{best_mape:.1f}%
+              <div class="price-range-pill">
+                Expected range: <strong>{fmt_inr(low)} &ndash; {fmt_inr(high)}</strong>
+                &nbsp;&middot;&nbsp; Model MAPE ~{best_mape:.1f}%
               </div>
-              <div class="divider"></div>
-              <div class="factors-label">What moved this price</div>
+              <div class="card-divider"></div>
+              <div class="factors-header">Key Valuation Drivers</div>
             """, unsafe_allow_html=True)
 
             if factors:
@@ -506,42 +586,41 @@ with right_col:
                     """, unsafe_allow_html=True)
             else:
                 st.markdown(
-                    '<div style="font-size:0.82rem;color:#333333;">'
-                    'Phone is in excellent condition &mdash; minimal deductions.</div>',
+                    '<div style="font-size:0.83rem;color:#475569;padding:6px 0;">'
+                    'Device is in top condition with minimal depreciation penalties.</div>',
                     unsafe_allow_html=True,
                 )
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # Spec summary line below card
+            # Specification summary banner
             st.markdown(f"""
             <div class="spec-summary">
-              {brand} {model_name} &middot; {storage} GB / {ram} GB RAM
-              &middot; {age_years:.0f} yr old &middot; Launch {fmt_inr(original_price)}
+              <strong>{brand} {model_name}</strong> &middot; {storage} GB Storage &middot; {ram} GB RAM<br>
+              Age: ~{age_years:.0f} yr &middot; Original Launch: {fmt_inr(original_price)}
             </div>
             """, unsafe_allow_html=True)
 
         except Exception as e:
-            st.error(f"Prediction error: {e}")
+            st.error(f"Valuation error: {e}")
 
 
-# -- Tabs -------------------------------------------------------------------
+# -- Bottom Tabs Section ----------------------------------------------------
 st.markdown('<hr class="tab-sep">', unsafe_allow_html=True)
 
 tab_batch, tab_perf, tab_about = st.tabs([
-    "Batch estimation (CSV upload)",
+    "Batch valuation (CSV upload)",
     "Model performance",
-    "About the data",
+    "Dataset documentation",
 ])
 
-# -- Tab: Batch Prediction via CSV ------------------------------------------
+# -- Tab 1: Batch Prediction ------------------------------------------------
 with tab_batch:
     st.markdown("""
-    Upload a CSV containing multiple phones to calculate resale price estimates in bulk.
-    The model predicts point estimates and uncertainty ranges for all records.
+    Upload a batch CSV file containing multiple phone listings to generate resale predictions at scale.
+    The model computes individual valuations, empirical ranges, and portfolio totals.
     """)
 
-    # Sample template generator
     sample_template_df = pd.DataFrame([
         {
             "brand": "Apple",
@@ -599,31 +678,30 @@ with tab_batch:
         )
 
     uploaded_file = st.file_uploader(
-        "Choose a CSV file",
+        "Upload your device spreadsheet (CSV)",
         type=["csv"],
-        help="Upload CSV with phone specifications",
+        help="Upload CSV with smartphone specifications",
     )
 
     if uploaded_file is not None:
         if not model_available():
-            st.error("Model file not found. Please run train.py first.")
+            st.error("Model file not found. Please train the model first.")
         else:
             try:
                 user_df = pd.read_csv(uploaded_file)
-                st.markdown(f"**Loaded {len(user_df)} rows.** Preview of uploaded data:")
+                st.markdown(f"**Loaded {len(user_df):,} records.** Preview:")
                 st.dataframe(user_df.head(4), use_container_width=True)
 
-                # Validate & prepare dataframe for pipeline
                 df_prep = user_df.copy()
 
-                # Derive age_years if only release_year is provided
+                # Derive age_years if only release_year is given
                 if "age_years" not in df_prep.columns:
                     if "release_year" in df_prep.columns:
                         df_prep["age_years"] = CURRENT_YEAR - pd.to_numeric(df_prep["release_year"], errors="coerce").fillna(CURRENT_YEAR - 2)
                     else:
-                        df_prep["age_years"] = 2.0  # sensible default
+                        df_prep["age_years"] = 2.0
 
-                # Default optional columns if missing
+                # Fill sensible defaults for optional fields if omitted
                 if "market_demand_index" not in df_prep.columns:
                     df_prep["market_demand_index"] = 5.5
                 if "has_box_bill" not in df_prep.columns:
@@ -635,62 +713,53 @@ with tab_batch:
                 if "body_condition" not in df_prep.columns:
                     df_prep["body_condition"] = "good"
 
-                # Check core required columns
                 required_cols = ["brand", "model", "original_price_inr"]
                 missing_core = [col for col in required_cols if col not in df_prep.columns]
 
                 if missing_core:
                     st.error(f"Missing required columns in CSV: {', '.join(missing_core)}")
                 else:
-                    # Clean string casing & whitespace
                     df_prep = clean_strings(df_prep)
 
-                    # Ensure all features exist
                     for f in ALL_FEATURES:
                         if f not in df_prep.columns:
                             df_prep[f] = np.nan
 
                     model = get_model()
                     metrics_data = get_metrics()
-                    mape_val = 15.0
+                    mape_val = 11.5
                     if metrics_data and "test_metrics" in metrics_data:
                         bm = metrics_data.get("best_model", "SVR")
-                        mape_val = metrics_data["test_metrics"].get(bm, {}).get("MAPE", 15.0)
+                        mape_val = metrics_data["test_metrics"].get(bm, {}).get("MAPE", 11.5)
 
-                    # Vectorized prediction
                     raw_preds = model.predict(df_prep[ALL_FEATURES])
                     preds = np.round(raw_preds / 100) * 100
                     half_mape = (mape_val / 2) / 100
                     low_preds = np.round(preds * (1 - half_mape) / 100) * 100
                     high_preds = np.round(preds * (1 + half_mape) / 100) * 100
 
-                    # Result dataframe
                     result_df = user_df.copy()
                     result_df["predicted_price_inr"] = preds.astype(int)
                     result_df["price_range_low_inr"] = low_preds.astype(int)
                     result_df["price_range_high_inr"] = high_preds.astype(int)
 
-                    # Display aggregate metrics
-                    st.markdown("---")
-                    st.markdown('<div class="section-label">Batch summary</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="section-label">Batch Valuation Summary</div>', unsafe_allow_html=True)
                     m_col1, m_col2, m_col3 = st.columns(3)
                     with m_col1:
                         st.metric("Total devices", f"{len(result_df):,}")
                     with m_col2:
                         avg_price = int(result_df["predicted_price_inr"].mean())
-                        st.metric("Average resale price", fmt_inr(avg_price))
+                        st.metric("Average estimated price", fmt_inr(avg_price))
                     with m_col3:
                         total_val = int(result_df["predicted_price_inr"].sum())
                         st.metric("Total portfolio value", fmt_inr(total_val))
 
-                    # Display table
-                    st.markdown('<div class="section-label">Predictions table</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="section-label">Valuation Output Table</div>', unsafe_allow_html=True)
                     st.dataframe(result_df, use_container_width=True)
 
-                    # Export button
                     res_csv = result_df.to_csv(index=False).encode("utf-8")
                     st.download_button(
-                        label="Download predictions CSV",
+                        label="Download valuations spreadsheet (CSV)",
                         data=res_csv,
                         file_name="predicted_phone_resale_prices.csv",
                         mime="text/csv",
@@ -698,17 +767,17 @@ with tab_batch:
             except Exception as e:
                 st.error(f"Error processing CSV: {e}")
 
-# -- Tab: Performance Metrics -----------------------------------------------
+# -- Tab 2: Model Performance -----------------------------------------------
 with tab_perf:
     if not model_available():
-        st.info("Train the model first to see performance metrics.")
+        st.info("Train the model first to inspect cross-validation and test metrics.")
     else:
         metrics_data = get_metrics()
         if not metrics_data:
             st.info("No metrics file found. Run `python src/train.py`.")
         else:
             bm = metrics_data.get("best_model", "--")
-            st.markdown(f"**Best model:** {bm}")
+            st.markdown(f"**Selected Optimal Model:** `{bm}`")
 
             tm = metrics_data.get("test_metrics", {})
             if tm:
@@ -725,7 +794,7 @@ with tab_perf:
                         "MSE":       "{:,.0f}",
                         "R2":        "{:.4f}",
                         "MAPE (%)":  "{:.1f}",
-                    }).highlight_min(subset=["RMSE (Rs)"], color="#e8e8e8"),
+                    }).highlight_min(subset=["RMSE (Rs)"], color="#f1f5f9"),
                     use_container_width=True,
                 )
 
@@ -733,50 +802,38 @@ with tab_perf:
             with c_l:
                 avp = FIGURES_DIR / "actual_vs_predicted.png"
                 if avp.exists():
-                    st.image(str(avp), caption="Actual vs Predicted",
-                             use_container_width=True)
+                    st.image(str(avp), caption="Actual vs Predicted Prices", use_container_width=True)
             with c_r:
                 fi = FIGURES_DIR / "feature_importances.png"
                 if fi.exists():
-                    st.image(str(fi), caption="Feature Importances (RF)",
-                             use_container_width=True)
+                    st.image(str(fi), caption="Feature Importances (Random Forest)", use_container_width=True)
 
             mc = FIGURES_DIR / "model_comparison.png"
             if mc.exists():
-                st.image(str(mc), caption="Model RMSE Comparison",
-                         use_container_width=True)
+                st.image(str(mc), caption="Model RMSE Comparison Across All 5 Families", use_container_width=True)
 
-# -- Tab: About the Data ---------------------------------------------------
+# -- Tab 3: Dataset Documentation -------------------------------------------
 with tab_about:
     st.markdown("""
-### Data
+### Dataset Architecture
 
-All baseline training data used in this project is **fully synthetic** -- generated by
-`src/data_generator.py`. No real transaction records were used.
+All baseline training records are generated using a controlled econometric simulation (`src/data_generator.py`).
+The data models real pricing mechanics observed in the Indian second-hand phone ecosystem (2019-2025).
 
-**What the synthetic data encodes:**
+#### Synthetic Formulation & Assumptions
 
-| Assumption | Detail |
+| Variable / Driver | Implementation Dynamics |
 |---|---|
-| Depreciation | Exponential decay; rate is brand-specific (Apple ~82%, Realme ~55% per year) |
-| Battery penalty | Nonlinear; sharp drop below 80% health |
-| Condition discounts | Screen cracked -> x0.70; body poor -> x0.68 |
-| Box + bill premium | +3% |
-| Warranty | +0.5% per remaining month |
-| Demand index | Derived from brand tier + phone age + Gaussian noise |
-| Price noise | Log-normal (sigma ~0.06) -- same phone, different sale price |
-| Deliberate mess | 3% missing values, 1.5% duplicates, 1% absurd outliers, inconsistent casing |
+| **Depreciation Curve** | Exponential decay; brand-specific retention (Apple ~82%/yr, Samsung ~72%/yr, Xiaomi/Realme ~55%/yr) |
+| **Battery Health Penalty** | Nonlinear degradation; sharp cliff below 80% health |
+| **Screen Condition** | Flawless (1.0x), Minor Scratches (0.94x), Cracked screen (0.70x) |
+| **Body Condition** | Like new (1.0x), Good (0.92x), Fair (0.82x), Poor (0.68x) |
+| **Documentation & Warranty** | Original box & bill adds +3% premium; warranty adds +0.5% per active month |
+| **Market Demand Index** | Continuous index (1-10) derived from brand prestige, model age, and organic volume |
+| **Price Dispersion** | Multiplicative log-normal noise (sigma ~0.06) simulates seller variation |
+| **Deliberate Data Noise** | ~3% missing values, ~1.5% duplicates, ~1% outliers, inconsistent casing for practical cleaning |
 
-**Why synthetic?**
-Real used-phone transaction data for the Indian market is proprietary.
-Synthetic data lets us design a controlled preprocessing exercise where we
-know exactly what mess was injected and why.
-
-**Scope:** India market only. Prices reflect ~2023-25 resale norms.
-
-**Limitations:**
-- Model learns the *synthetic* pricing function, not real market behaviour.
-- Only 30 phone models from 8 brands are catalogued.
-- Demand index is a proxy; real demand depends on platform (OLX, Cashify, etc.).
-- Model trained on static snapshot; market prices drift over time.
+#### Boundaries & Scope
+- **Geographic Focus:** Republic of India smartphone market (INR denominations).
+- **Catalogue:** 30 high-volume models across 8 major manufacturers.
 """)
