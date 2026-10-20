@@ -31,6 +31,7 @@ from config import (
 )
 from predict import load_model, predict_price, predict_price_range
 from preprocessing import clean_strings
+from train import run_training_pipeline
 
 # -- Page config ------------------------------------------------------------
 st.set_page_config(
@@ -608,8 +609,9 @@ with right_col:
 # -- Bottom Tabs Section ----------------------------------------------------
 st.markdown('<hr class="tab-sep">', unsafe_allow_html=True)
 
-tab_batch, tab_perf, tab_about = st.tabs([
+tab_batch, tab_retrain, tab_perf, tab_about = st.tabs([
     "Batch valuation (CSV upload)",
+    "Model retraining",
     "Model performance",
     "Dataset documentation",
 ])
@@ -767,7 +769,150 @@ with tab_batch:
             except Exception as e:
                 st.error(f"Error processing CSV: {e}")
 
-# -- Tab 2: Model Performance -----------------------------------------------
+# -- Tab 2: Model Retraining ------------------------------------------------
+with tab_retrain:
+    st.markdown("""
+    Train and evaluate all 5 machine learning models (Linear Regression, KNN, Decision Tree, SVR, and Random Forest) using 5-fold cross-validation.
+    
+    * **Custom Dataset:** Upload your own historical sales records (CSV must contain phone features plus the target column `price_inr`).
+    * **Baseline Dataset:** If no file is provided, the pipeline will train on the standard 6,000-device Indian market dataset.
+    """)
+
+    c_tr1, c_tr2 = st.columns([3, 1])
+    with c_tr2:
+        sample_train_df = pd.DataFrame([
+            {
+                "brand": "Apple",
+                "model": "iPhone 13",
+                "release_year": 2021,
+                "storage_gb": 128,
+                "ram_gb": 4,
+                "battery_health_pct": 86.0,
+                "screen_condition": "minor_scratches",
+                "body_condition": "good",
+                "has_box_bill": 1,
+                "warranty_months_left": 0,
+                "original_price_inr": 79900,
+                "market_demand_index": 7.0,
+                "price_inr": 41200,
+            },
+            {
+                "brand": "Samsung",
+                "model": "Galaxy S22",
+                "release_year": 2022,
+                "storage_gb": 128,
+                "ram_gb": 8,
+                "battery_health_pct": 89.0,
+                "screen_condition": "flawless",
+                "body_condition": "like_new",
+                "has_box_bill": 1,
+                "warranty_months_left": 3,
+                "original_price_inr": 72999,
+                "market_demand_index": 6.5,
+                "price_inr": 34800,
+            },
+        ])
+        sample_tr_bytes = sample_train_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="Download training CSV template",
+            data=sample_tr_bytes,
+            file_name="training_data_template.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+
+    retrain_file = st.file_uploader(
+        "Upload custom training CSV (optional)",
+        type=["csv"],
+        key="retrain_csv_uploader",
+        help="Upload CSV with smartphone specs and actual prices in 'price_inr'",
+    )
+
+    custom_train_df = None
+    has_valid_custom_data = False
+    if retrain_file is not None:
+        try:
+            custom_train_df = pd.read_csv(retrain_file)
+            st.markdown(f"**Loaded custom dataset:** {len(custom_train_df):,} records. Preview:")
+            st.dataframe(custom_train_df.head(3), use_container_width=True)
+
+            if "price_inr" not in custom_train_df.columns:
+                st.error("Missing target column 'price_inr' in the uploaded file. Training requires historical sale prices. To estimate prices on phones without known prices, use the 'Batch valuation' tab.")
+                has_valid_custom_data = False
+            else:
+                has_valid_custom_data = True
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
+            has_valid_custom_data = False
+
+    if has_valid_custom_data:
+        st.info(f"Target: Train models on your uploaded dataset ({len(custom_train_df):,} devices).")
+    else:
+        st.info("Target: Train models on the baseline 6,000-device simulation dataset.")
+
+    btn_label = "Retrain models on custom dataset" if has_valid_custom_data else "Train models on baseline dataset"
+    start_training = st.button(btn_label, type="primary", use_container_width=True)
+
+    if start_training:
+        status_box = st.status("Executing training pipeline ...", expanded=True)
+        def progress_tracker(message: str):
+            status_box.write(message)
+
+        try:
+            target_df = custom_train_df if has_valid_custom_data else None
+            best_model_name, all_metrics = run_training_pipeline(
+                raw_df=target_df,
+                save_plots=True,
+                progress_cb=progress_tracker,
+            )
+            # Clear caches so the webapp immediately reflects the freshly trained model
+            st.cache_resource.clear()
+            st.cache_data.clear()
+
+            status_box.update(
+                label=f"Training complete! Optimal model: {best_model_name}",
+                state="complete",
+                expanded=False,
+            )
+
+            st.success(f"Model successfully updated and deployed: **{best_model_name}**.")
+
+            tm = all_metrics.get("test_metrics", {})
+            if tm:
+                best_m = tm.get(best_model_name, {})
+                c_m1, c_m2, c_m3, c_m4 = st.columns(4)
+                with c_m1:
+                    st.metric("Best Model", best_model_name)
+                with c_m2:
+                    st.metric("Test R2", f"{best_m.get('R2', 0):.4f}")
+                with c_m3:
+                    st.metric("Test RMSE", fmt_inr(int(best_m.get('RMSE', 0))))
+                with c_m4:
+                    st.metric("Test MAPE", f"{best_m.get('MAPE', 0):.1f}%")
+
+                st.markdown('<div class="section-label">All Models Comparison Table</div>', unsafe_allow_html=True)
+                df_res = pd.DataFrame(tm).T.sort_values("RMSE")
+                df_res.index.name = "Model"
+                df_res = df_res.rename(columns={
+                    "MAE": "MAE (Rs)", "RMSE": "RMSE (Rs)",
+                    "MSE": "MSE", "R2": "R2", "MAPE": "MAPE (%)",
+                })
+                st.dataframe(
+                    df_res.style.format({
+                        "MAE (Rs)":  "{:,.0f}",
+                        "RMSE (Rs)": "{:,.0f}",
+                        "MSE":       "{:,.0f}",
+                        "R2":        "{:.4f}",
+                        "MAPE (%)":  "{:.1f}",
+                    }).highlight_min(subset=["RMSE (Rs)"], color="#f1f5f9"),
+                    use_container_width=True,
+                )
+
+        except Exception as e:
+            status_box.update(label="Training failed", state="error", expanded=True)
+            st.error(f"Error during training pipeline: {e}")
+
+# -- Tab 3: Model Performance -----------------------------------------------
 with tab_perf:
     if not model_available():
         st.info("Train the model first to inspect cross-validation and test metrics.")

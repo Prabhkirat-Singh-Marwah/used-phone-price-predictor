@@ -136,27 +136,33 @@ def build_feature_pipeline() -> ColumnTransformer:
     return transformer
 
 
+def prepare_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean strings, remove duplicates and outliers, ensure age_years and valid target."""
+    df = df.copy()
+    df = clean_strings(df)
+    before_dup = len(df)
+    df = df.drop_duplicates()
+    print(f"[preprocessing] Dropped {before_dup - len(df)} duplicate rows")
+
+    if TARGET in df.columns:
+        df = remove_outliers(df)
+        df = df.dropna(subset=[TARGET])
+
+    if "age_years" not in df.columns and "release_year" in df.columns:
+        df["age_years"] = CURRENT_YEAR - pd.to_numeric(df["release_year"], errors="coerce").fillna(CURRENT_YEAR - 2)
+    elif "age_years" in df.columns and "release_year" in df.columns:
+        df["age_years"] = CURRENT_YEAR - df["release_year"]
+
+    return df.reset_index(drop=True)
+
+
 # -- Load + prepare dataset -------------------------------------------------
 
 def load_and_prepare(path: Path = RAW_DATA_PATH) -> pd.DataFrame:
     """Load raw CSV, clean strings, drop duplicates, remove outliers."""
     df = pd.read_csv(path)
     print(f"[preprocessing] Loaded {len(df):,} rows, {df.shape[1]} columns")
-
-    df = clean_strings(df)
-    before = len(df)
-    df = df.drop_duplicates()
-    print(f"[preprocessing] Dropped {before - len(df)} duplicate rows")
-
-    df = remove_outliers(df)
-
-    # Compute age_years from release_year (in case it was re-derived needed)
-    df["age_years"] = CURRENT_YEAR - df["release_year"]
-
-    # Drop rows with missing target
-    df = df.dropna(subset=[TARGET])
-
-    return df.reset_index(drop=True)
+    return prepare_dataframe(df)
 
 
 # -- Train / test split + save ----------------------------------------------

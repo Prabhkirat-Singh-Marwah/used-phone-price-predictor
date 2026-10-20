@@ -292,19 +292,31 @@ def _get_feature_names(ct: ColumnTransformer) -> list[str]:
 
 # -- Main training orchestrator ---------------------------------------------
 
-def main() -> None:
-    print("=" * 60)
-    print("Used Phone Price Predictor -- Training Pipeline")
-    print("=" * 60)
+def run_training_pipeline(
+    raw_df: pd.DataFrame | None = None,
+    save_plots: bool = True,
+    progress_cb = None,
+) -> tuple[str, dict]:
+    """
+    Execute full training, 5-fold CV, and hyperparameter tuning across 5 model families.
+    If raw_df is provided, it is cleaned and used for training.
+    If raw_df is None, the default raw CSV is loaded (or generated if missing).
+    """
+    from preprocessing import prepare_dataframe, split_and_save
 
-    # -- Load data (run preprocessing if processed splits don't exist)
-    if not TRAIN_PATH.exists():
-        print("[train] Processed splits not found. Running preprocessing ...")
-        from config import RAW_DATA_PATH
-        df = load_and_prepare(RAW_DATA_PATH)
-        split_and_save(df)
+    if progress_cb:
+        progress_cb("Preparing and cleaning dataset ...")
 
-    train_df, test_df = load_splits()
+    if raw_df is not None:
+        prepared_df = prepare_dataframe(raw_df)
+        train_df, test_df = split_and_save(prepared_df)
+    else:
+        if not RAW_DATA_PATH.exists():
+            from data_generator import generate
+            generate()
+        prepared_df = load_and_prepare(RAW_DATA_PATH)
+        train_df, test_df = split_and_save(prepared_df)
+
     X_train = train_df[ALL_FEATURES]
     y_train = train_df[TARGET].values
     X_test  = test_df[ALL_FEATURES]
@@ -312,31 +324,41 @@ def main() -> None:
 
     print(f"\nTrain: {len(X_train):,} rows  |  Test: {len(X_test):,} rows\n")
 
-    # -- Train all models
     results: dict = {}
     fitted:  dict = {}
 
+    if progress_cb:
+        progress_cb("1/5: Training Linear Regression with feature selection ...")
     print("-- 1. Linear Regression --")
     fitted["Linear"], lin_res = train_linear(X_train, y_train)
     results.update(lin_res)
 
+    if progress_cb:
+        progress_cb("2/5: Tuning K-Nearest Neighbors (K in [3..15]) ...")
     print("\n-- 2. KNN --")
     fitted["KNN"], knn_res = train_knn(X_train, y_train)
     results["KNN"] = knn_res
 
+    if progress_cb:
+        progress_cb("3/5: Tuning Decision Tree (depth and leaf criteria) ...")
     print("\n-- 3. Decision Tree --")
     fitted["Decision Tree"], dt_res = train_decision_tree(X_train, y_train)
     results["Decision Tree"] = dt_res
 
+    if progress_cb:
+        progress_cb("4/5: Tuning Support Vector Regressor (SVR RBF kernel) ...")
     print("\n-- 4. SVR (RBF) --")
     fitted["SVR"], svr_res = train_svr(X_train, y_train)
     results["SVR"] = svr_res
 
+    if progress_cb:
+        progress_cb("5/5: Tuning Random Forest Regressor (ensemble) ...")
     print("\n-- 5. Random Forest --")
     fitted["Random Forest"], rf_res = train_random_forest(X_train, y_train)
     results["Random Forest"] = rf_res
 
-    # -- Evaluate all on test set
+    if progress_cb:
+        progress_cb("Evaluating all models on held-out test split ...")
     print("\n-- Test-set Evaluation --")
     test_metrics: dict = {}
     for name, pipe in fitted.items():
@@ -346,29 +368,24 @@ def main() -> None:
         print(f"  {name:<20} MAE={m['MAE']:>10,.0f}  RMSE={m['RMSE']:>10,.0f}  "
               f"R2={m['R2']:.4f}  MAPE={m['MAPE']:.1f}%")
 
-    # -- Comparison table
     comp_df = pd.DataFrame(test_metrics).T.sort_values("RMSE")
     print(f"\n{comp_df.to_string()}\n")
 
-    # -- Pick best model (lowest RMSE)
     best_name = comp_df.index[0]
     best_pipe = fitted[best_name]
     print(f"Best model: {best_name}")
 
-    # -- Plots
-    plot_model_comparison(test_metrics, metric="RMSE")
+    if save_plots:
+        plot_model_comparison(test_metrics, metric="RMSE")
+        y_pred_best = best_pipe.predict(X_test)
+        plot_actual_vs_predicted(y_test, y_pred_best,
+                                 title=f"Actual vs Predicted -- {best_name}")
+        plot_residuals(y_test, y_pred_best)
 
-    y_pred_best = best_pipe.predict(X_test)
-    plot_actual_vs_predicted(y_test, y_pred_best,
-                             title=f"Actual vs Predicted -- {best_name}")
-    plot_residuals(y_test, y_pred_best)
-
-    # -- Save model
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(best_pipe, MODEL_PATH)
     print(f"\n[train] Best model saved -> {MODEL_PATH}")
 
-    # -- Save metrics
     all_metrics = {
         "best_model": best_name,
         "test_metrics": test_metrics,
@@ -376,18 +393,24 @@ def main() -> None:
     }
     save_metrics(all_metrics)
 
-    # -- Conclusion
     print("\n-- Conclusion --")
     print(f"  Winner : {best_name}")
     print(f"  RMSE   : Rs{test_metrics[best_name]['RMSE']:,.0f}")
     print(f"  MAE    : Rs{test_metrics[best_name]['MAE']:,.0f}")
     print(f"  R2     : {test_metrics[best_name]['R2']:.4f}")
     print(f"  MAPE   : {test_metrics[best_name]['MAPE']:.1f}%")
-    print()
-    print("  Random Forest consistently wins on tabular regression tasks because")
-    print("  it captures nonlinear interactions (age x brand retention, battery")
-    print("  health threshold effects) via ensemble averaging of decision trees,")
-    print("  without requiring feature scaling or assumption of linearity.")
+
+    if progress_cb:
+        progress_cb(f"Training complete! Best model: {best_name} (R2={test_metrics[best_name]['R2']:.4f})")
+
+    return best_name, all_metrics
+
+
+def main() -> None:
+    print("=" * 60)
+    print("Used Phone Price Predictor -- Training Pipeline")
+    print("=" * 60)
+    run_training_pipeline()
 
 
 if __name__ == "__main__":
