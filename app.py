@@ -5,8 +5,10 @@ Streamlit web app for the Used Phone Price Predictor.
 
 Layout: wide mode, two-column form + result card, performance tabs below.
 Design: strict black / white / gray palette. No color accents.
+Features: single-device interactive estimation & batch CSV upload estimation.
 """
 
+import io
 import json
 import sys
 from pathlib import Path
@@ -28,6 +30,7 @@ from config import (
     MODEL_PATH,
 )
 from predict import load_model, predict_price, predict_price_range
+from preprocessing import clean_strings
 
 # -- Page config ------------------------------------------------------------
 st.set_page_config(
@@ -39,7 +42,7 @@ st.set_page_config(
 
 # -- CSS injection ----------------------------------------------------------
 # Palette (black / white / grays only):
-#   #000000  header bg, price, thick borders
+#   #000000  header bg, price, thick borders, buttons
 #   #111111  primary text
 #   #333333  body text, labels, section headings
 #   #555555  secondary / caption text
@@ -154,36 +157,35 @@ html, body, [class*="css"] {
 }
 
 /* ---- Streamlit widget label overrides ---- */
-/* Force all form labels to be dark, readable */
 label, .stRadio label, .stCheckbox label,
 div[data-testid="stSelectbox"] label,
 div[data-testid="stSlider"] label,
 div[data-testid="stRadio"] label,
 div[data-testid="stNumberInput"] label,
 div[data-testid="stCheckbox"] label,
-div[data-testid="stSelectSlider"] label {
+div[data-testid="stSelectSlider"] label,
+div[data-testid="stFileUploader"] label {
     font-size: 0.81rem !important;
     font-weight: 500 !important;
     color: #111111 !important;
 }
+
 /* Radio option labels */
 div[data-testid="stRadio"] p {
     color: #111111 !important;
     font-size: 0.81rem;
 }
-/* Slider value display */
+
+/* Slider values */
 div[data-testid="stSlider"] [data-testid="stTickBarMin"],
 div[data-testid="stSlider"] [data-testid="stTickBarMax"] {
     color: #555555;
     font-size: 0.75rem;
 }
-/* Selectbox text */
-div[data-testid="stSelectbox"] div[data-baseweb="select"] {
-    border-color: #cccccc;
-}
 
-/* ---- Primary button ---- */
-div[data-testid="stButton"] button[kind="primary"] {
+/* Buttons (primary & download) */
+div[data-testid="stButton"] button[kind="primary"],
+div[data-testid="stDownloadButton"] button {
     background: #000000 !important;
     color: #ffffff !important;
     border: none;
@@ -192,11 +194,25 @@ div[data-testid="stButton"] button[kind="primary"] {
     font-size: 0.84rem;
     letter-spacing: 0.04em;
 }
-div[data-testid="stButton"] button[kind="primary"]:hover {
+div[data-testid="stButton"] button[kind="primary"]:hover,
+div[data-testid="stDownloadButton"] button:hover {
     background: #222222 !important;
 }
 
-/* ---- Tabs ---- */
+/* Metrics */
+div[data-testid="stMetricValue"] {
+    color: #000000 !important;
+    font-size: 1.45rem !important;
+    font-weight: 600 !important;
+}
+div[data-testid="stMetricLabel"] {
+    color: #555555 !important;
+    font-size: 0.74rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* Tabs */
 div[data-testid="stTabs"] button {
     font-size: 0.81rem;
     color: #333333;
@@ -207,21 +223,21 @@ div[data-testid="stTabs"] button[aria-selected="true"] {
     border-bottom-color: #000000 !important;
 }
 
-/* ---- Dataframe ---- */
+/* Dataframe header */
 div[data-testid="stDataFrame"] th {
     background-color: #f0f0f0 !important;
     color: #111111 !important;
     font-weight: 600;
 }
 
-/* ---- Separator before tabs ---- */
+/* Separator before tabs */
 .tab-sep {
     border: none;
     border-top: 1.5px solid #111111;
     margin: 32px 0 0 0;
 }
 
-/* ---- Warning / info box text ---- */
+/* Warning / info box */
 div[data-testid="stAlert"] {
     color: #111111;
 }
@@ -485,8 +501,177 @@ with right_col:
 # -- Tabs -------------------------------------------------------------------
 st.markdown('<hr class="tab-sep">', unsafe_allow_html=True)
 
-tab_perf, tab_about = st.tabs(["Model performance", "About the data"])
+tab_batch, tab_perf, tab_about = st.tabs([
+    "Batch estimation (CSV upload)",
+    "Model performance",
+    "About the data",
+])
 
+# -- Tab: Batch Prediction via CSV ------------------------------------------
+with tab_batch:
+    st.markdown("""
+    Upload a CSV containing multiple phones to calculate resale price estimates in bulk.
+    The model predicts point estimates and uncertainty ranges for all records.
+    """)
+
+    # Sample template generator
+    sample_template_df = pd.DataFrame([
+        {
+            "brand": "Apple",
+            "model": "iPhone 13",
+            "release_year": 2021,
+            "storage_gb": 128,
+            "ram_gb": 4,
+            "battery_health_pct": 86.0,
+            "screen_condition": "minor_scratches",
+            "body_condition": "good",
+            "has_box_bill": 1,
+            "warranty_months_left": 0,
+            "original_price_inr": 79900,
+            "market_demand_index": 7.0,
+        },
+        {
+            "brand": "Samsung",
+            "model": "Galaxy S22",
+            "release_year": 2022,
+            "storage_gb": 128,
+            "ram_gb": 8,
+            "battery_health_pct": 89.0,
+            "screen_condition": "flawless",
+            "body_condition": "like_new",
+            "has_box_bill": 1,
+            "warranty_months_left": 3,
+            "original_price_inr": 72999,
+            "market_demand_index": 6.5,
+        },
+        {
+            "brand": "Xiaomi",
+            "model": "Redmi Note 12",
+            "release_year": 2023,
+            "storage_gb": 128,
+            "ram_gb": 6,
+            "battery_health_pct": 92.0,
+            "screen_condition": "minor_scratches",
+            "body_condition": "fair",
+            "has_box_bill": 0,
+            "warranty_months_left": 0,
+            "original_price_inr": 17999,
+            "market_demand_index": 5.5,
+        },
+    ])
+
+    c_top1, c_top2 = st.columns([3, 1])
+    with c_top2:
+        template_csv = sample_template_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="Download sample CSV template",
+            data=template_csv,
+            file_name="phone_sample_template.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+
+    uploaded_file = st.file_uploader(
+        "Choose a CSV file",
+        type=["csv"],
+        help="Upload CSV with phone specifications",
+    )
+
+    if uploaded_file is not None:
+        if not model_available():
+            st.error("Model file not found. Please run train.py first.")
+        else:
+            try:
+                user_df = pd.read_csv(uploaded_file)
+                st.markdown(f"**Loaded {len(user_df)} rows.** Preview of uploaded data:")
+                st.dataframe(user_df.head(4), use_container_width=True)
+
+                # Validate & prepare dataframe for pipeline
+                df_prep = user_df.copy()
+
+                # Derive age_years if only release_year is provided
+                if "age_years" not in df_prep.columns:
+                    if "release_year" in df_prep.columns:
+                        df_prep["age_years"] = CURRENT_YEAR - pd.to_numeric(df_prep["release_year"], errors="coerce").fillna(CURRENT_YEAR - 2)
+                    else:
+                        df_prep["age_years"] = 2.0  # sensible default
+
+                # Default optional columns if missing
+                if "market_demand_index" not in df_prep.columns:
+                    df_prep["market_demand_index"] = 5.5
+                if "has_box_bill" not in df_prep.columns:
+                    df_prep["has_box_bill"] = 1
+                if "warranty_months_left" not in df_prep.columns:
+                    df_prep["warranty_months_left"] = 0
+                if "screen_condition" not in df_prep.columns:
+                    df_prep["screen_condition"] = "minor_scratches"
+                if "body_condition" not in df_prep.columns:
+                    df_prep["body_condition"] = "good"
+
+                # Check core required columns
+                required_cols = ["brand", "model", "original_price_inr"]
+                missing_core = [col for col in required_cols if col not in df_prep.columns]
+
+                if missing_core:
+                    st.error(f"Missing required columns in CSV: {', '.join(missing_core)}")
+                else:
+                    # Clean string casing & whitespace
+                    df_prep = clean_strings(df_prep)
+
+                    # Ensure all features exist
+                    for f in ALL_FEATURES:
+                        if f not in df_prep.columns:
+                            df_prep[f] = np.nan
+
+                    model = get_model()
+                    metrics_data = get_metrics()
+                    mape_val = 15.0
+                    if metrics_data and "test_metrics" in metrics_data:
+                        bm = metrics_data.get("best_model", "SVR")
+                        mape_val = metrics_data["test_metrics"].get(bm, {}).get("MAPE", 15.0)
+
+                    # Vectorized prediction
+                    raw_preds = model.predict(df_prep[ALL_FEATURES])
+                    preds = np.round(raw_preds / 100) * 100
+                    half_mape = (mape_val / 2) / 100
+                    low_preds = np.round(preds * (1 - half_mape) / 100) * 100
+                    high_preds = np.round(preds * (1 + half_mape) / 100) * 100
+
+                    # Result dataframe
+                    result_df = user_df.copy()
+                    result_df["predicted_price_inr"] = preds.astype(int)
+                    result_df["price_range_low_inr"] = low_preds.astype(int)
+                    result_df["price_range_high_inr"] = high_preds.astype(int)
+
+                    # Display aggregate metrics
+                    st.markdown("---")
+                    st.markdown('<div class="section-label">Batch summary</div>', unsafe_allow_html=True)
+                    m_col1, m_col2, m_col3 = st.columns(3)
+                    with m_col1:
+                        st.metric("Total devices", f"{len(result_df):,}")
+                    with m_col2:
+                        avg_price = int(result_df["predicted_price_inr"].mean())
+                        st.metric("Average resale price", fmt_inr(avg_price))
+                    with m_col3:
+                        total_val = int(result_df["predicted_price_inr"].sum())
+                        st.metric("Total portfolio value", fmt_inr(total_val))
+
+                    # Display table
+                    st.markdown('<div class="section-label">Predictions table</div>', unsafe_allow_html=True)
+                    st.dataframe(result_df, use_container_width=True)
+
+                    # Export button
+                    res_csv = result_df.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        label="Download predictions CSV",
+                        data=res_csv,
+                        file_name="predicted_phone_resale_prices.csv",
+                        mime="text/csv",
+                    )
+            except Exception as e:
+                st.error(f"Error processing CSV: {e}")
+
+# -- Tab: Performance Metrics -----------------------------------------------
 with tab_perf:
     if not model_available():
         st.info("Train the model first to see performance metrics.")
@@ -534,11 +719,12 @@ with tab_perf:
                 st.image(str(mc), caption="Model RMSE Comparison",
                          use_container_width=True)
 
+# -- Tab: About the Data ---------------------------------------------------
 with tab_about:
     st.markdown("""
 ### Data
 
-All data used in this project is **fully synthetic** -- generated by
+All baseline training data used in this project is **fully synthetic** -- generated by
 `src/data_generator.py`. No real transaction records were used.
 
 **What the synthetic data encodes:**
