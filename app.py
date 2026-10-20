@@ -170,10 +170,37 @@ div[data-testid="stFileUploader"] label {
     color: #111111 !important;
 }
 
+/* ---- Checkbox styling (high-contrast black text & border) ---- */
+div[data-testid="stCheckbox"] {
+    color: #111111 !important;
+}
+div[data-testid="stCheckbox"] * {
+    color: #111111 !important;
+}
+div[data-testid="stCheckbox"] label span p {
+    color: #111111 !important;
+    font-size: 0.82rem !important;
+    font-weight: 500 !important;
+}
+div[data-testid="stCheckbox"] div[role="checkbox"] {
+    border: 1.5px solid #111111 !important;
+    background-color: #ffffff !important;
+}
+div[data-testid="stCheckbox"] div[role="checkbox"][aria-checked="true"] {
+    background-color: #000000 !important;
+    border-color: #000000 !important;
+}
+div[data-testid="stCheckbox"] div[role="checkbox"] svg {
+    fill: #ffffff !important;
+}
+
 /* Radio option labels */
+div[data-testid="stRadio"] * {
+    color: #111111 !important;
+}
 div[data-testid="stRadio"] p {
     color: #111111 !important;
-    font-size: 0.81rem;
+    font-size: 0.82rem !important;
 }
 
 /* Slider values */
