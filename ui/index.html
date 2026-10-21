@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Used Phone Price Estimator — India Market</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Top Header Banner -->
+        <header class="header-bar">
+            <h1 class="header-title">Used Phone Price Estimator &mdash; India Market</h1>
+            <p class="header-sub">Statistical valuation model for second-hand smartphones based on specs, condition, and market demand</p>
+        </header>
+
+        <!-- Main 2-Column Valuation Section -->
+        <main class="valuation-grid">
+            <!-- Left Column: Input Form Panel -->
+            <section class="panel">
+                <form id="valuationForm" onsubmit="return false;">
+                    <!-- Device Specifications -->
+                    <div class="section-label">Device Specifications</div>
+                    <div class="form-group">
+                        <label for="brandSelect">Brand</label>
+                        <select id="brandSelect"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modelSelect">Model</label>
+                        <select id="modelSelect"></select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="storageSelect">Internal storage (GB)</label>
+                            <select id="storageSelect"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="ramSelect">RAM (GB)</label>
+                            <select id="ramSelect"></select>
+                        </div>
+                    </div>
+
+                    <!-- Physical Condition -->
+                    <div class="section-label">Physical Condition</div>
+                    <div class="form-group slider-container">
+                        <div class="slider-header">
+                            <label for="batterySlider">Battery health percentage (%)</label>
+                            <span id="batteryVal" class="slider-val-badge">85%</span>
+                        </div>
+                        <input type="range" id="batterySlider" min="55" max="100" value="85" step="1">
+                        <div class="slider-ticks">
+                            <span>55%</span>
+                            <span>70%</span>
+                            <span>85%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Screen condition</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="screenCond" value="flawless"> Flawless
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="screenCond" value="minor_scratches" checked> Minor Scratches
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="screenCond" value="cracked"> Cracked
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Body condition</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="bodyCond" value="like_new"> Like New
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="bodyCond" value="good" checked> Good
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="bodyCond" value="fair"> Fair
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="bodyCond" value="poor"> Poor
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row" style="align-items: center; margin-top: 8px;">
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="hasBoxBill" checked> Has original box + bill
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="warrantyInput">Warranty remaining (months)</label>
+                            <input type="number" id="warrantyInput" min="0" max="12" value="0" step="1">
+                        </div>
+                    </div>
+
+                    <!-- Market Dynamics -->
+                    <div class="section-label">Market Dynamics</div>
+                    <div class="form-group">
+                        <label for="demandSelect">Buyer demand level</label>
+                        <select id="demandSelect">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+
+                    <button type="button" id="btnCalculate" class="btn-primary">Calculate estimated resale price</button>
+                </form>
+            </section>
+
+            <!-- Right Column: Result Valuation Card -->
+            <section class="result-card" id="valuationResultCard">
+                <div class="price-badge-label">Estimated Resale Valuation</div>
+                <div class="price-main" id="priceDisplay">Rs 41,200</div>
+                <div class="price-range-pill" id="priceRangePill">
+                    Expected range: <strong id="rangeMinMax">Rs 38,800 &ndash; Rs 43,600</strong> &nbsp;&middot;&nbsp; Model MAPE ~<span id="mapeDisplay">11.5</span>%
+                </div>
+                <hr class="card-divider">
+                <div class="factors-header">Key Valuation Drivers</div>
+                <div id="factorsContainer">
+                    <!-- Populated dynamically via JS -->
+                </div>
+                <div class="spec-summary" id="specSummary">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </section>
+        </main>
+
+        <hr class="tab-sep">
+
+        <!-- Bottom Tabs Navigation -->
+        <nav class="tabs-nav" role="tablist">
+            <button class="tab-btn active" data-tab="tab-batch">Batch valuation (CSV upload)</button>
+            <button class="tab-btn" data-tab="tab-retrain">Model retraining</button>
+            <button class="tab-btn" data-tab="tab-perf">Model performance</button>
+            <button class="tab-btn" data-tab="tab-about">Dataset documentation</button>
+        </nav>
+
+        <!-- Tab 1: Batch Valuation -->
+        <div id="tab-batch" class="tab-content active">
+            <div class="tab-action-header">
+                <p style="font-size: 0.85rem; color: #475569; max-width: 800px;">
+                    Upload a batch CSV file containing multiple phone listings to generate resale predictions at scale.
+                    The model computes individual valuations, empirical ranges, and portfolio totals.
+                </p>
+                <button id="btnDownloadBatchTemplate" class="btn-secondary">Download sample CSV template</button>
+            </div>
+
+            <div class="dropzone" id="batchDropzone">
+                <input type="file" id="batchFileInput" accept=".csv" class="hidden">
+                <p><strong>Drag and drop your device spreadsheet (CSV)</strong> or click to browse</p>
+                <small>Accepts CSV files with phone specifications</small>
+            </div>
+
+            <div id="batchResultsSection" class="hidden">
+                <div class="section-label">Batch Valuation Summary</div>
+                <div class="metrics-row">
+                    <div class="metric-card">
+                        <div class="metric-label">Total devices</div>
+                        <div class="metric-value" id="batchMetricCount">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Average estimated price</div>
+                        <div class="metric-value" id="batchMetricAvg">Rs 0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Total portfolio value</div>
+                        <div class="metric-value" id="batchMetricTotal">Rs 0</div>
+                    </div>
+                </div>
+
+                <div class="tab-action-header" style="margin-top: 20px;">
+                    <div class="section-label" style="border: none; margin: 0; padding: 0;">Valuation Output Table</div>
+                    <button id="btnDownloadBatchResults" class="btn-primary" style="width: auto; margin: 0;">Download valuations spreadsheet (CSV)</button>
+                </div>
+                <div class="table-responsive" id="batchTableContainer"></div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Model Retraining -->
+        <div id="tab-retrain" class="tab-content">
+            <div class="tab-action-header">
+                <p style="font-size: 0.85rem; color: #475569; max-width: 800px;">
+                    Train and evaluate all 5 machine learning models (Linear Regression, KNN, Decision Tree, SVR, and Random Forest) using 5-fold cross-validation.<br><br>
+                    &bull; <strong>Custom Dataset:</strong> Upload your own historical sales records (CSV must contain phone features plus target column <code>price_inr</code>).<br>
+                    &bull; <strong>Baseline Dataset:</strong> If no file is provided, the pipeline will train on the standard 6,000-device Indian market dataset.
+                </p>
+                <button id="btnDownloadTrainTemplate" class="btn-secondary">Download training CSV template</button>
+            </div>
+
+            <div class="dropzone" id="retrainDropzone">
+                <input type="file" id="retrainFileInput" accept=".csv" class="hidden">
+                <p><strong>Upload custom training CSV (optional)</strong> or drag & drop</p>
+                <small>CSV with smartphone specs and actual prices in 'price_inr'</small>
+            </div>
+
+            <div id="retrainTargetAlert" class="alert alert-info">
+                Target: Train models on the baseline 6,000-device simulation dataset.
+            </div>
+
+            <button type="button" id="btnStartTraining" class="btn-primary" style="margin-bottom: 16px;">Train models on baseline dataset</button>
+
+            <div id="retrainStatusContainer" class="hidden">
+                <div id="retrainAlert" class="alert alert-info">
+                    <span class="spinner"></span> Executing training pipeline ...
+                </div>
+                <div id="retrainLogBox" class="status-box"></div>
+            </div>
+
+            <div id="retrainResultsContainer" class="hidden">
+                <div class="metrics-row">
+                    <div class="metric-card">
+                        <div class="metric-label">Best Model</div>
+                        <div class="metric-value" id="retrainBestModel">--</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Test R&sup2;</div>
+                        <div class="metric-value" id="retrainBestR2">0.0000</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Test RMSE</div>
+                        <div class="metric-value" id="retrainBestRMSE">Rs 0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Test MAPE</div>
+                        <div class="metric-value" id="retrainBestMAPE">0.0%</div>
+                    </div>
+                </div>
+
+                <div class="section-label">All Models Comparison Table</div>
+                <div class="table-responsive" id="retrainTableContainer"></div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Model Performance -->
+        <div id="tab-perf" class="tab-content">
+            <div style="margin-bottom: 16px; font-size: 0.86rem; color: #334155;">
+                Selected Optimal Model: <code id="perfBestModelBadge" style="background:#f1f5f9; padding: 2px 6px; border-radius:4px; font-weight:600; color:#0f172a;">SVR</code>
+            </div>
+
+            <div class="table-responsive" id="perfTableContainer"></div>
+
+            <div class="img-grid">
+                <div class="img-box">
+                    <img src="/figures/actual_vs_predicted.png" alt="Actual vs Predicted Prices" onerror="this.parentElement.style.display='none'">
+                    <div class="img-caption">Actual vs Predicted Prices</div>
+                </div>
+                <div class="img-box">
+                    <img src="/figures/feature_importances.png" alt="Feature Importances" onerror="this.parentElement.style.display='none'">
+                    <div class="img-caption">Feature Importances (Random Forest)</div>
+                </div>
+            </div>
+
+            <div class="img-box" style="margin-top: 16px;">
+                <img src="/figures/model_comparison.png" alt="Model Comparison" onerror="this.parentElement.style.display='none'">
+                <div class="img-caption">Model RMSE Comparison Across All 5 Families</div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Dataset Documentation -->
+        <div id="tab-about" class="tab-content">
+            <div class="panel" style="line-height: 1.6;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Dataset Architecture</h3>
+                <p style="font-size: 0.85rem; color: #475569; margin-bottom: 20px;">
+                    All baseline training records are generated using a controlled econometric simulation (<code>src/data_generator.py</code>).
+                    The data models real pricing mechanics observed in the Indian second-hand phone ecosystem (2019&ndash;2025).
+                </p>
+
+                <h4 style="font-size: 0.92rem; font-weight: 700; color: #1e293b; margin-bottom: 10px;">Synthetic Formulation &amp; Assumptions</h4>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Variable / Driver</th>
+                                <th>Implementation Dynamics</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Depreciation Curve</strong></td>
+                                <td>Exponential decay; brand-specific retention (Apple ~82%/yr, Samsung ~72%/yr, Xiaomi/Realme ~55%/yr)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Battery Health Penalty</strong></td>
+                                <td>Nonlinear degradation; sharp cliff below 80% health</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Screen Condition</strong></td>
+                                <td>Flawless (1.0x), Minor Scratches (0.94x), Cracked screen (0.70x)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Body Condition</strong></td>
+                                <td>Like new (1.0x), Good (0.92x), Fair (0.82x), Poor (0.68x)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Documentation &amp; Warranty</strong></td>
+                                <td>Original box &amp; bill adds +3% premium; warranty adds +0.5% per active month</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Market Demand Index</strong></td>
+                                <td>Continuous index (1-10) derived from brand prestige, model age, and organic volume</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Price Dispersion</strong></td>
+                                <td>Multiplicative log-normal noise (&sigma; ~0.06) simulates seller variation</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Deliberate Data Noise</strong></td>
+                                <td>~3% missing values, ~1.5% duplicates, ~1% outliers, inconsistent casing for practical cleaning</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 style="font-size: 0.92rem; font-weight: 700; color: #1e293b; margin: 20px 0 10px 0;">Boundaries &amp; Scope</h4>
+                <ul style="font-size: 0.85rem; color: #475569; padding-left: 20px;">
+                    <li><strong>Geographic Focus:</strong> Republic of India smartphone market (INR denominations).</li>
+                    <li><strong>Catalogue:</strong> 30 high-volume models across 8 major manufacturers.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Logic Script -->
+    <script src="app.js"></script>
+</body>
+</html>
